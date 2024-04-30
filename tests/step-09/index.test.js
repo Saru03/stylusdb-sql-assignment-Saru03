@@ -101,6 +101,7 @@ test('Execute SQL Query with Not Equal to', async () => {
     expect(result[0]).toHaveProperty('name');
 });
 
+
 test('Parse SQL Query with INNER JOIN', async () => {
     const query = 'SELECT student.name, enrollment.course FROM student INNER JOIN enrollment ON student.id=enrollment.student_id';
     const result = await parseQuery(query);
@@ -171,22 +172,58 @@ test('Execute SQL Query with INNER JOIN and a WHERE Clause', async () => {
     }));
 });
 
-test('Execute SQL Query with LEFT JOIN', async () => {
+test('Parse SQL Query with LEFT JOIN', async () => {
     const query = 'SELECT student.name, enrollment.course FROM student LEFT JOIN enrollment ON student.id=enrollment.student_id';
-    const result = await executeSELECTQuery(query);
-    expect(result).toEqual(expect.arrayContaining([
-        expect.objectContaining({ "student.name": "Alice", "enrollment.course": null }),
-        expect.objectContaining({ "student.name": "John", "enrollment.course": "Mathematics" })
-    ]));
-    expect(result.length).toEqual(5); // 4 students, but John appears twice
+    const result = await parseQuery(query);
+    expect(result).toEqual({
+        fields: ['student.name', 'enrollment.course'],
+        table: 'student',
+        whereClauses: [],
+        joinTable: 'enrollment',
+        joinCondition: { left: 'student.id', right: 'enrollment.student_id' },
+        joinType: 'LEFT'
+    })
+});
+
+test('Parse SQL Query with RIGHT JOIN', async () => {
+    const query = 'SELECT student.name, enrollment.course FROM student RIGHT JOIN enrollment ON student.id=enrollment.student_id';
+    const result = await parseQuery(query);
+    expect(result).toEqual({
+        fields: ['student.name', 'enrollment.course'],
+        table: 'student',
+        whereClauses: [],
+        joinTable: 'enrollment',
+        joinCondition: { left: 'student.id', right: 'enrollment.student_id' },
+        joinType: 'RIGHT'
+    })
 });
 
 test('Execute SQL Query with LEFT JOIN', async () => {
     const query = 'SELECT student.name, enrollment.course FROM student LEFT JOIN enrollment ON student.id=enrollment.student_id';
     const result = await executeSELECTQuery(query);
-    expect(result).toEqual(expect.arrayContaining([
-        expect.objectContaining({ "student.name": "Alice", "enrollment.course": null }),
-        expect.objectContaining({ "student.name": "John", "enrollment.course": "Mathematics" })
-    ]));
-    expect(result.length).toEqual(5); // 4 students, but John appears twice
+    expect(result).toEqual(
+        expect.arrayContaining([
+            { "student.name": "Alice", "enrollment.course": null },
+            { "student.name": "John", "enrollment.course": "Mathematics" },
+            { "student.name": "John", "enrollment.course": "Physics" },
+            { "student.name": "Jane", "enrollment.course": "Chemistry" },
+            { "student.name": "Bob", "enrollment.course": "Mathematics" }
+        ])
+    );
+    expect(result.length).toEqual(5); // 5 rows in the result
+});
+
+test('Execute SQL Query with RIGHT JOIN', async () => {
+    const query = 'SELECT student.name, enrollment.course FROM student LEFT JOIN enrollment ON student.id=enrollment.student_id';
+    const result = await executeSELECTQuery(query);
+    expect(result).toEqual(
+        expect.arrayContaining([
+            { "student.name": "Alice", "enrollment.course": null },
+            { "student.name": "John", "enrollment.course": "Mathematics" },
+            { "student.name": "John", "enrollment.course": "Physics" },
+            { "student.name": "Jane", "enrollment.course": "Chemistry" },
+            { "student.name": "Bob", "enrollment.course": "Mathematics" }
+        ])
+    );
+    expect(result.length).toEqual(5); // 5 rows in the result
 });
